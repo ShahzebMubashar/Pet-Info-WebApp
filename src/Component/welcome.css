@@ -1,0 +1,13 @@
+.sized-div {
+  width: 320px; /* Set the width of the div */
+  height: 500px; /* Set the height of the div */
+  background-color: #ffffff; /* Optional: Add a background color */
+  background-image: "https://www.shutterstock.com/image-photo/kitten-jumping-isolated-on-white-260nw-56474257.jpg";
+  text-align: center;
+  align-items: center;
+  position: relative;
+  padding: 10px;
+  padding-left: 0px;
+  border: 3px solid #261672; /* Optional: Add a border */
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); /* Optional: Add a shadow */
+}
