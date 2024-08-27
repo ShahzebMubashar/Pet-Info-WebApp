@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Input, Cascader, Button, notification } from "antd";
+import axios from "axios"; // Ensure axios is imported
 
-function EditPet({ pet, options, onUpdate, onCancel }) {
+const Edit = ({ pet, options, onCancel }) => {
   const [editPet, setEditPet] = useState(pet);
 
   function handleInputChange(e) {
@@ -19,8 +20,8 @@ function EditPet({ pet, options, onUpdate, onCancel }) {
     }));
   }
 
-  function handleUpdate() {
-    const { name, pettype, breed, price } = editPet;
+  const handleUpdate = async () => {
+    const { _id, name, pettype, breed, price } = editPet;
 
     // Validation
     if (!name || !pettype || !breed || !price) {
@@ -40,8 +41,21 @@ function EditPet({ pet, options, onUpdate, onCancel }) {
       return;
     }
 
-    onUpdate(editPet);
-  }
+    try {
+      // Make the PUT request to update the pet
+      const response = await axios.put(`/pets/66c8db8f1897cd9a2b3214ec`, editPet);
+      notification.success({
+        message: "Success",
+        description: "Pet updated successfully.",
+      });
+      // Optionally handle further actions like redirecting or updating UI
+    } catch (error) {
+      notification.error({
+        message: "Update Failed",
+        description: "Failed to update pet information.",
+      });
+    }
+  };
 
   return (
     <div
@@ -98,6 +112,6 @@ function EditPet({ pet, options, onUpdate, onCancel }) {
       </Button>
     </div>
   );
-}
+};
 
-export default EditPet;
+export default Edit;
