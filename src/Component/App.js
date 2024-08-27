@@ -9,8 +9,10 @@ import {
   Row,
   Space,
   Divider,
+  notification,
 } from "antd";
 import { DeleteTwoTone, EditTwoTone } from "@ant-design/icons";
+import axios from "axios";
 import "./App.css";
 import {
   getTokens,
@@ -24,29 +26,47 @@ const { Header, Content, Footer } = Layout;
 function App({ PetsData, setPetsData, petEditor }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [petToDelete, setPetToDelete] = useState(null);
-  // const [activeCustomerId, setActiveCustomerId] = useState(null);
   const navigate = useNavigate();
 
+  // Function to navigate to Add Pet page
   function navigateFunc() {
     navigate("/Add");
   }
 
+  // Function to handle delete button click
   function handleDeleteClick(petId) {
     setPetToDelete(petId);
     setShowConfirm(true);
   }
 
-  function handleConfirmDelete() {
-    setPetsData((prevData) => prevData.filter((pet) => pet.id !== petToDelete));
-    setShowConfirm(false);
-    setPetToDelete(null);
+  // Function to confirm deletion
+  async function handleConfirmDelete() {
+    try {
+      await axios.delete(`http://localhost:5000/pets/${petToDelete}`);
+      setPetsData((prevData) => prevData.filter((pet) => pet.id !== petToDelete));
+      notification.success({
+        message: 'Success',
+        description: 'Pet deleted successfully.',
+      });
+    } catch (error) {
+      console.error('Failed to delete pet:', error);
+      notification.error({
+        message: 'Deletion Failed',
+        description: 'Failed to delete pet information.',
+      });
+    } finally {
+      setShowConfirm(false);
+      setPetToDelete(null);
+    }
   }
 
+  // Function to cancel delete operation
   function handleCancelDelete() {
     setShowConfirm(false);
     setPetToDelete(null);
   }
 
+  // Function to handle sign out
   function handleSignOut() {
     const tokens = getTokens();
     const customerId = Object.keys(tokens).find(
@@ -61,11 +81,11 @@ function App({ PetsData, setPetsData, petEditor }) {
   useEffect(() => {
     if (!isUserLoggedIn() || getCurrentUserRole() !== "customer") {
       navigate("/");
-    } else {
-      // fetchAllPets(); or any other initialization
     }
+    // You may fetch pets data here if necessary
   }, [navigate]);
 
+  // Define pet images
   const petImages = {
     Cat: "https://cdn.vectorstock.com/i/500p/67/08/cat-full-black-silhouette-vector-51516708.jpg",
     Dog: "https://t4.ftcdn.net/jpg/04/37/04/67/360_F_437046701_q9t3W43b6y4nBn7710uH3mwEegUiMLA3.jpg",
@@ -73,6 +93,7 @@ function App({ PetsData, setPetsData, petEditor }) {
     Bird: "https://www.thepixelfreak.co.uk/wp-content/uploads/2018/07/Alternate-Dove-Logo.png",
   };
 
+  // Define pet cards
   const petCards = PetsData.map((pet) => (
     <Col span={6} key={pet.id}>
       <Card
@@ -86,7 +107,7 @@ function App({ PetsData, setPetsData, petEditor }) {
           backgroundRepeat: "no-repeat",
         }}
         actions={[
-          <EditTwoTone onClick={() => petEditor(pet)} />,
+          <EditTwoTone onClick={() => navigate(`/edit/${pet.id}`)} />, // Navigate to edit page with pet ID
           <DeleteTwoTone onClick={() => handleDeleteClick(pet.id)} />,
         ]}
         hoverable={true}
@@ -117,7 +138,6 @@ function App({ PetsData, setPetsData, petEditor }) {
         }}
       >
         <h1 style={{ textAlign: "center", color: "white" }}> Pet Store </h1>
-        {/* Sign Out Button */}
         <Button
           type="default"
           size="large"
@@ -131,24 +151,18 @@ function App({ PetsData, setPetsData, petEditor }) {
         </Button>
       </Header>
       <Content style={{ padding: "0 48px" }}>
-        <Breadcrumb style={{ margin: "20px 0" }}>
-          {/* <Breadcrumb.Item>Home</Breadcrumb.Item> */}
-          <Breadcrumb
-            items={[{ title: "Home" }, { title: "Customer Dashboard" }]}
-          />
-          <Button
-            type="primary"
-            size="large"
-            onClick={navigateFunc}
-            style={{
-              marginLeft: "575px",
-              position: "absolute",
-            }}
-          >
-            Add Pet
-          </Button>
-        </Breadcrumb>
-
+        <Breadcrumb items={[{ title: "Home" }, { title: "Customer Dashboard" }]} />
+        <Button
+          type="primary"
+          size="large"
+          onClick={navigateFunc}
+          style={{
+            marginLeft: "575px",
+            position: "absolute",
+          }}
+        >
+          Add Pet
+        </Button>
         <div
           style={{
             padding: 24,
@@ -156,42 +170,39 @@ function App({ PetsData, setPetsData, petEditor }) {
             background: "#15325b",
           }}
         >
-          <>
-            <Row gutter={16}>{petCards}</Row>
-
-            {showConfirm && (
-              <div
-                className="sized-div1"
-                style={{
-                  position: "fixed",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  background: "white",
-                  padding: "50px",
-                  borderRadius: "5px",
-                  boxShadow: "0 0 10px rgba(0, 0, 0, 0.1)",
-                }}
+          <Row gutter={16}>{petCards}</Row>
+          {showConfirm && (
+            <div
+              className="sized-div1"
+              style={{
+                position: "fixed",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                background: "white",
+                padding: "50px",
+                borderRadius: "5px",
+                boxShadow: "0 0 10px rgba(0, 0, 0, 0.1)",
+              }}
+            >
+              <h3>Are you sure you want to delete this pet?</h3>
+              <Button
+                type="primary"
+                size="large"
+                onClick={handleConfirmDelete}
+                style={{ marginTop: "60px", marginRight: "80px" }}
               >
-                <h3>Are you sure you want to delete this pet?</h3>
-                <Button
-                  type="primary"
-                  size="large"
-                  onClick={handleConfirmDelete}
-                  style={{ marginTop: "60px", marginRight: "80px" }}
-                >
-                  Delete
-                </Button>
-                <Button
-                  type="default"
-                  size="large"
-                  onClick={handleCancelDelete}
-                >
-                  Cancel
-                </Button>
-              </div>
-            )}
-          </>
+                Delete
+              </Button>
+              <Button
+                type="default"
+                size="large"
+                onClick={handleCancelDelete}
+              >
+                Cancel
+              </Button>
+            </div>
+          )}
         </div>
       </Content>
       <Footer>
