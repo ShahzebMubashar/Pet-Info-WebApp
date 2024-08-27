@@ -43,16 +43,18 @@ function App({ PetsData, setPetsData, petEditor }) {
   async function handleConfirmDelete() {
     try {
       await axios.delete(`http://localhost:5000/pets/${petToDelete}`);
-      setPetsData((prevData) => prevData.filter((pet) => pet.id !== petToDelete));
+      setPetsData((prevData) =>
+        prevData.filter((pet) => pet.id !== petToDelete)
+      );
       notification.success({
-        message: 'Success',
-        description: 'Pet deleted successfully.',
+        message: "Success",
+        description: "Pet deleted successfully.",
       });
     } catch (error) {
-      console.error('Failed to delete pet:', error);
+      console.error("Failed to delete pet:", error);
       notification.error({
-        message: 'Deletion Failed',
-        description: 'Failed to delete pet information.',
+        message: "Deletion Failed",
+        description: "Failed to delete pet information.",
       });
     } finally {
       setShowConfirm(false);
@@ -106,10 +108,10 @@ function App({ PetsData, setPetsData, petEditor }) {
           backgroundPosition: "bottom right",
           backgroundRepeat: "no-repeat",
         }}
-        actions={[
-          <EditTwoTone onClick={() => navigate(`/edit/${pet.id}`)} />, // Navigate to edit page with pet ID
-          <DeleteTwoTone onClick={() => handleDeleteClick(pet.id)} />,
-        ]}
+        // actions={[
+        //   <EditTwoTone onClick={() => navigate(`/edit/${pet.id}`)} />, // Navigate to edit page with pet ID
+        //   <DeleteTwoTone onClick={() => handleDeleteClick(pet.id)} />,
+        // ]}
         hoverable={true}
         bordered
       >
@@ -151,7 +153,9 @@ function App({ PetsData, setPetsData, petEditor }) {
         </Button>
       </Header>
       <Content style={{ padding: "0 48px" }}>
-        <Breadcrumb items={[{ title: "Home" }, { title: "Customer Dashboard" }]} />
+        <Breadcrumb
+          items={[{ title: "Home" }, { title: "Customer Dashboard" }]}
+        />
         <Button
           type="primary"
           size="large"
@@ -194,11 +198,7 @@ function App({ PetsData, setPetsData, petEditor }) {
               >
                 Delete
               </Button>
-              <Button
-                type="default"
-                size="large"
-                onClick={handleCancelDelete}
-              >
+              <Button type="default" size="large" onClick={handleCancelDelete}>
                 Cancel
               </Button>
             </div>
