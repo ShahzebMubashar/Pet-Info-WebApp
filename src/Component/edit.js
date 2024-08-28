@@ -1,9 +1,14 @@
-import React, { useState } from "react";
-import { Input, Cascader, Button, notification } from "antd";
-import axios from "axios"; // Ensure axios is imported
+import React, { useState, useEffect } from "react";
+import { Input, Select, Button, notification } from "antd";
 
-const Edit = ({ pet, options, onCancel }) => {
+const { Option } = Select;
+
+const Edit = ({ pet, options, statusOptions, onUpdate, onCancel }) => {
   const [editPet, setEditPet] = useState(pet);
+
+  useEffect(() => {
+    setEditPet(pet);
+  }, [pet]);
 
   function handleInputChange(e) {
     const { name, value } = e.target;
@@ -13,18 +18,28 @@ const Edit = ({ pet, options, onCancel }) => {
     }));
   }
 
-  function handleCascaderChange(value) {
-    setEditPet((prevPet) => ({
-      ...prevPet,
-      pettype: value[0],
-    }));
+  // function handleSelectChange(name, value) {
+  //   setEditPet((prevPet) => ({
+  //     ...prevPet,
+  //     [name]: value,
+  //   }));
+  // }
+  function handleSelectChange(name, value) {
+    console.log(`Changing ${name} to:`, value);
+    setEditPet((prevPet) => {
+      const updatedPet = {
+        ...prevPet,
+        [name]: value,
+      };
+      console.log("Updated pet state:", updatedPet);
+      return updatedPet;
+    });
   }
-
-  const handleUpdate = async () => {
-    const { _id, name, pettype, breed, price } = editPet;
+  const handleUpdate = () => {
+    const { name, type, breed, price, status } = editPet;
 
     // Validation
-    if (!name || !pettype || !breed || !price) {
+    if (!name || !type || !breed || !price || !status) {
       notification.error({
         message: "Validation Error",
         description: "Please fill in all fields before updating.",
@@ -40,21 +55,9 @@ const Edit = ({ pet, options, onCancel }) => {
       });
       return;
     }
-
-    try {
-      // Make the PUT request to update the pet
-      const response = await axios.put(`/pets/66c8db8f1897cd9a2b3214ec`, editPet);
-      notification.success({
-        message: "Success",
-        description: "Pet updated successfully.",
-      });
-      // Optionally handle further actions like redirecting or updating UI
-    } catch (error) {
-      notification.error({
-        message: "Update Failed",
-        description: "Failed to update pet information.",
-      });
-    }
+    console.log("Sending updated pet to parent:", editPet);
+    // Call the onUpdate function passed from the parent component
+    onUpdate(editPet);
   };
 
   return (
@@ -79,20 +82,37 @@ const Edit = ({ pet, options, onCancel }) => {
         onChange={handleInputChange}
         style={{ margin: "10px" }}
       />
-      <Cascader
+      <Select
         placeholder="Type"
-        value={[editPet.pettype]}
-        options={options}
-        onChange={handleCascaderChange}
-        style={{ margin: "10px", marginTop: "20px" }}
-      />
+        value={editPet.type}
+        onChange={(value) => handleSelectChange("type", value)}
+        style={{ margin: "10px", width: "100%" }}
+      >
+        {options.map((option) => (
+          <Option key={option.value} value={option.value}>
+            {option.label}
+          </Option>
+        ))}
+      </Select>
       <Input
         placeholder="Breed"
         name="breed"
         value={editPet.breed}
         onChange={handleInputChange}
-        style={{ margin: "10px", marginTop: "20px" }}
+        style={{ margin: "10px" }}
       />
+      <Select
+        placeholder="Status"
+        value={editPet.status}
+        onChange={(value) => handleSelectChange("status", value)}
+        style={{ margin: "10px", width: "100%" }}
+      >
+        {statusOptions.map((option) => (
+          <Option key={option.value} value={option.value}>
+            {option.label}
+          </Option>
+        ))}
+      </Select>
       <Input
         type="number"
         placeholder="Price"
@@ -101,9 +121,10 @@ const Edit = ({ pet, options, onCancel }) => {
         onChange={handleInputChange}
         min="1"
         max="10000"
-        step="10"
-        style={{ margin: "10px", marginTop: "20px" }}
+        step="0.01"
+        style={{ margin: "10px" }}
       />
+
       <Button type="primary" onClick={handleUpdate} style={{ margin: "10px" }}>
         Update
       </Button>

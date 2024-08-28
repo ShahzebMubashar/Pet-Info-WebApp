@@ -9,6 +9,7 @@ import {
   isUserLoggedIn,
   getCurrentUserRole,
 } from "../TokenManagement/tokenUtils";
+import EditPetPage from "../Component/EditPetPage";
 
 function ProtectedRoute({ children, allowedRole }) {
   const isLoggedIn = isUserLoggedIn();
@@ -94,6 +95,7 @@ export default function Control() {
         />
         <Route
           path="/Edit"
+          // path="/edit/:id"
           element={
             <EditPet
               pet={petToEdit}
@@ -113,6 +115,7 @@ export default function Control() {
             </ProtectedRoute>
           }
         />
+        <Route path="/edit/:id" element={<EditPetPage />} />
       </Routes>
     </div>
   );

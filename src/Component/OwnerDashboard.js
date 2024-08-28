@@ -1,11 +1,29 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Breadcrumb, Layout, Button, Card, Col, Row, Space, Divider, Select, Tag } from "antd";
+import {
+  Breadcrumb,
+  Layout,
+  Button,
+  Card,
+  Col,
+  Row,
+  Space,
+  Divider,
+  Select,
+  Tag,
+} from "antd";
 import { DeleteTwoTone, EditTwoTone } from "@ant-design/icons";
 import axios from "axios";
 import "./App.css";
-import { getTokens, removeToken, isUserLoggedIn, getCurrentUserRole, getCurrentUserToken } from "../TokenManagement/tokenUtils";
-
+import {
+  getTokens,
+  removeToken,
+  isUserLoggedIn,
+  getCurrentUserRole,
+  getCurrentUserToken,
+} from "../TokenManagement/tokenUtils";
+import { Modal, notification } from "antd";
+import axiosInstance from "../api/axios";
 const { Header, Content, Footer } = Layout;
 const { Option } = Select;
 
@@ -44,7 +62,31 @@ function OwnerDashboard() {
       setFilteredPets(pets.filter((pet) => pet.type === value));
     }
   };
-
+  const handleDelete = (petId) => {
+    Modal.confirm({
+      title: "Are you sure you want to delete this pet?",
+      content: "This action cannot be undone.",
+      okText: "Yes",
+      okType: "danger",
+      cancelText: "No",
+      onOk: async () => {
+        try {
+          await axiosInstance.delete(`/pets/${petId}`);
+          notification.success({
+            message: "Success",
+            description: "Pet deleted successfully.",
+          });
+          fetchAllPets(); // Refresh the pet list
+        } catch (error) {
+          console.error("Error deleting pet:", error);
+          notification.error({
+            message: "Delete Failed",
+            description: "Failed to delete pet.",
+          });
+        }
+      },
+    });
+  };
   const handleSignOut = () => {
     const tokens = getTokens();
     const ownerId = Object.keys(tokens).find(
@@ -81,7 +123,7 @@ function OwnerDashboard() {
         }}
         actions={[
           <EditTwoTone onClick={() => handleEdit(pet._id)} />,
-          <DeleteTwoTone onClick={() => { /* Handle delete logic */ }} />,
+          <DeleteTwoTone onClick={() => handleDelete(pet._id)} />,
         ]}
         hoverable={true}
         bordered
@@ -97,7 +139,10 @@ function OwnerDashboard() {
           </p>
           <p>Price: ${pet.price}</p>
         </div>
-        <Space size={"large"} split={<Divider type="vertical" align="center" />}></Space>
+        <Space
+          size={"large"}
+          split={<Divider type="vertical" align="center" />}
+        ></Space>
       </Card>
     </Col>
   ));
@@ -133,7 +178,11 @@ function OwnerDashboard() {
       <Content style={{ padding: "0 48px" }}>
         <Breadcrumb items={[{ title: "Home" }, { title: "Owner Dashboard" }]} />
         <div style={{ marginBottom: "20px" }}>
-          <Select defaultValue="all" style={{ width: 120 }} onChange={handleTypeChange}>
+          <Select
+            defaultValue="all"
+            style={{ width: 120 }}
+            onChange={handleTypeChange}
+          >
             <Option value="all">All Pets</Option>
             <Option value="cat">Cats</Option>
             <Option value="dog">Dogs</Option>
