@@ -10,8 +10,7 @@ const petSchema = new mongoose.Schema({
     enum: ["available", "adopted"],
     default: "available",
   },
-  adoptedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Customer" },
-  adoptedDate: { type: Date },
+  quantity: { type: Number, required: true, default: 1 },
 });
 
 module.exports = mongoose.model("Pet", petSchema);

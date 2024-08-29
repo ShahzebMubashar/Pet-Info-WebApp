@@ -11,8 +11,10 @@ import {
   Divider,
   Select,
   Tag,
+  Modal,
+  notification,
 } from "antd";
-import { DeleteTwoTone, EditTwoTone } from "@ant-design/icons";
+import { DeleteTwoTone, EditTwoTone, PlusOutlined } from "@ant-design/icons";
 import axios from "axios";
 import "./App.css";
 import {
@@ -22,8 +24,9 @@ import {
   getCurrentUserRole,
   getCurrentUserToken,
 } from "../TokenManagement/tokenUtils";
-import { Modal, notification } from "antd";
 import axiosInstance from "../api/axios";
+import EditPetPage from "./EditPetPage";
+
 const { Header, Content, Footer } = Layout;
 const { Option } = Select;
 
@@ -31,6 +34,7 @@ function OwnerDashboard() {
   const [pets, setPets] = useState([]);
   const [filteredPets, setFilteredPets] = useState([]);
   const [selectedType, setSelectedType] = useState("all");
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const navigate = useNavigate();
 
   const fetchAllPets = async () => {
@@ -62,6 +66,7 @@ function OwnerDashboard() {
       setFilteredPets(pets.filter((pet) => pet.type === value));
     }
   };
+
   const handleDelete = (petId) => {
     Modal.confirm({
       title: "Are you sure you want to delete this pet?",
@@ -72,21 +77,14 @@ function OwnerDashboard() {
       onOk: async () => {
         try {
           await axiosInstance.delete(`/pets/${petId}`);
-          notification.success({
-            message: "Success",
-            description: "Pet deleted successfully.",
-          });
-          fetchAllPets(); // Refresh the pet list
+          fetchAllPets();
         } catch (error) {
           console.error("Error deleting pet:", error);
-          notification.error({
-            message: "Delete Failed",
-            description: "Failed to delete pet.",
-          });
         }
       },
     });
   };
+
   const handleSignOut = () => {
     const tokens = getTokens();
     const ownerId = Object.keys(tokens).find(
@@ -102,11 +100,29 @@ function OwnerDashboard() {
     navigate(`/edit/${petId}`);
   };
 
-  const petImages = {
-    cat: "https://cdn.vectorstock.com/i/500p/67/08/cat-full-black-silhouette-vector-51516708.jpg",
-    dog: "https://t4.ftcdn.net/jpg/04/37/04/67/360_F_437046701_q9t3W43b6y4nBn7710uH3mwEegUiMLA3.jpg",
-    fish: "https://img.freepik.com/premium-vector/black-white-vector-fish-logo_567294-6334.jpg",
-    bird: "https://www.thepixelfreak.co.uk/wp-content/uploads/2018/07/Alternate-Dove-Logo.png",
+  const handleAddPet = () => {
+    setIsModalVisible(true);
+  };
+
+  const handleModalCancel = () => {
+    setIsModalVisible(false);
+  };
+
+  const createNewPet = async (newPet) => {
+    try {
+      await axiosInstance.post(`/pets`, newPet);
+      setIsModalVisible(false);
+      notification.success({
+        message: "Success",
+        description: "Pet created successfully.",
+      });
+      fetchAllPets();  // Refresh the pet list after adding a new pet
+    } catch (error) {
+      notification.error({
+        message: "Creation Failed",
+        description: "Failed to create new pet.",
+      });
+    }
   };
 
   const petCards = filteredPets.map((pet) => (
@@ -116,7 +132,7 @@ function OwnerDashboard() {
         style={{
           margin: "10px",
           marginTop: "20px",
-          backgroundImage: `url(${petImages[pet.type]})`,
+          backgroundImage: `url(${pet.type})`,
           backgroundRepeat: "no-repeat",
           backgroundSize: "65% 65%",
           backgroundPosition: "bottom right -18px",
@@ -189,6 +205,14 @@ function OwnerDashboard() {
             <Option value="fish">Fish</Option>
             <Option value="bird">Birds</Option>
           </Select>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            style={{ marginLeft: "20px" }}
+            onClick={handleAddPet}
+          >
+            Add Pet
+          </Button>
         </div>
         <div style={{ padding: 24, minHeight: 580, background: "#15325b" }}>
           {filteredPets.length === 0 ? (
@@ -202,6 +226,14 @@ function OwnerDashboard() {
         <p>Triton industries©</p>
         <p>contact: talha.asgher222@gmail.com</p>
       </Footer>
+      <Modal
+        title="Add New Pet"
+        visible={isModalVisible}
+        onCancel={handleModalCancel}
+        footer={null}
+      >
+        <EditPetPage createNewPet={createNewPet} />
+      </Modal>
     </Layout>
   );
 }

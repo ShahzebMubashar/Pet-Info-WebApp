@@ -4,7 +4,7 @@ import Edit from "./edit";
 import { notification } from "antd";
 import axiosInstance from "../api/axios";
 
-function EditPetPage() {
+function EditPetPage({ createNewPet }) {
   const { id } = useParams();
   const [pet, setPet] = useState(null);
   const navigate = useNavigate();
@@ -14,13 +14,20 @@ function EditPetPage() {
   useEffect(() => {
     const fetchPet = async () => {
       try {
-        setLoading(true);
-        console.log("Fetching pet with ID:", id);
-        const response = await axiosInstance.get(`/pets/${id}`);
-        console.log("Pet data:", response.data);
-        setPet(response.data);
+        if (id) {
+          setLoading(true);
+          const response = await axiosInstance.get(`/pets/${id}`);
+          setPet(response.data);
+        } else {
+          setPet({
+            name: "",
+            type: "",
+            breed: "",
+            price: "",
+            status: "available",
+          });
+        }
       } catch (error) {
-        console.error("Error fetching pet:", error);
         setError("Failed to fetch pet information");
       } finally {
         setLoading(false);
@@ -30,20 +37,22 @@ function EditPetPage() {
   }, [id]);
 
   const handleUpdate = async (updatedPet) => {
-    try {
-      console.log("Updating pet with data:", updatedPet);
-      await axiosInstance.put(`/pets/${id}`, updatedPet);
-      notification.success({
-        message: "Success",
-        description: "Pet updated successfully.",
-      });
-      navigate("/home");
-    } catch (error) {
-      console.error("Failed to update pet:", error);
-      notification.error({
-        message: "Update Failed",
-        description: "Failed to update pet information.",
-      });
+    if (id) {
+      try {
+        await axiosInstance.put(`/pets/${id}`, updatedPet);
+        notification.success({
+          message: "Success",
+          description: "Pet updated successfully.",
+        });
+        navigate("/home");
+      } catch (error) {
+        notification.error({
+          message: "Update Failed",
+          description: "Failed to update pet information.",
+        });
+      }
+    } else {
+      createNewPet(updatedPet);
     }
   };
 

@@ -9,6 +9,39 @@ exports.getAllPets = async (req, res) => {
   }
 };
 
+
+exports.adoptPet = async (req, res) => {
+  try {
+    const petId = req.params.id;
+    const updatedPet = await Pet.findByIdAndUpdate(
+      petId,
+      { status: 'adopted' },
+      { new: true }
+    );
+    if (!updatedPet) {
+      return res.status(404).json({ message: 'Pet not found' });
+    }
+    res.json(updatedPet);
+  } catch (error) {
+    console.error('Error adopting pet:', error);
+    res.status(500).json({ message: 'Failed to adopt pet' });
+  }
+};
+
+app.patch('/pets/adopt/:id', async (req, res) => {
+  try {
+    const petId = req.params.id;
+    const updatedPet = await Pet.findByIdAndUpdate(petId, { status: 'adopted' }, { new: true });
+    if (!updatedPet) {
+      return res.status(404).json({ message: 'Pet not found' });
+    }
+    res.json(updatedPet);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update pet status', error });
+  }
+});
+
+
 // exports.createPet = async (req, res) => {
 //   const newPet = new Pet(req.body);
 //   try {

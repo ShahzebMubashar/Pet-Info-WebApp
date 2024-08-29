@@ -1,5 +1,7 @@
 
 const express = require("express");
+const PetController = require('../controllers/petController.js');
+
 const {
   OwnerRegistration,
   CustomerRegistration,
@@ -22,5 +24,9 @@ router.get("/customer/pets", auth, getCustomerPets);
 router.get("/owner/all-pets", auth, ownerAuth, getAllPets);
 router.get("/available-pets", auth, getAvailablePetsByType);
 router.post("/pets", createPet);
+
+
+router.patch('/pets/adopt/:id', PetController.adoptPet);
+
 
 module.exports = router;

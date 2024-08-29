@@ -8,6 +8,7 @@ export default function AddPet({ onSubmit, options }) {
     pettype: "",
     breed: "",
     price: "",
+    quantity: "",  // Add quantity to the form data state
   });
 
   const navigate = useNavigate();
@@ -28,10 +29,10 @@ export default function AddPet({ onSubmit, options }) {
   }
 
   function handleSubmit() {
-    const { name, pettype, breed, price } = formData;
+    const { name, pettype, breed, price, quantity } = formData;
 
     // Validation
-    if (!name || !pettype || !breed || !price) {
+    if (!name || !pettype || !breed || !price || !quantity) {
       notification.error({
         message: "Validation Error",
         description: "Please fill in all fields before submitting.",
@@ -49,8 +50,18 @@ export default function AddPet({ onSubmit, options }) {
       return;
     }
 
+    // Quantity validation
+    const quantityValue = parseInt(quantity, 10);
+    if (isNaN(quantityValue) || quantityValue < 1) {
+      notification.error({
+        message: "Validation Error",
+        description: "Quantity must be a positive integer.",
+      });
+      return;
+    }
+
     onSubmit(formData);
-    setFormData({ name: "", pettype: "", breed: "", price: "" });
+    setFormData({ name: "", pettype: "", breed: "", price: "", quantity: "" });
     navigate("/home");
   }
 
@@ -92,6 +103,16 @@ export default function AddPet({ onSubmit, options }) {
             min="1"
             max="10000"
             step="10"
+            style={{ margin: "10px", marginTop: "20px" }}
+          />
+          <Input
+            type="number"
+            placeholder="Quantity"
+            name="quantity"
+            value={formData.quantity}
+            onChange={handleInputChange}
+            min="1"
+            step="1"
             style={{ margin: "10px", marginTop: "20px" }}
           />
           <Button

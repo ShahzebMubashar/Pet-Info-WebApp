@@ -1,51 +1,88 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Breadcrumb,
-  Layout,
-  Button,
-  Card,
-  Col,
-  Row,
-  Space,
-  Divider,
-  notification,
-} from "antd";
-import { DeleteTwoTone, EditTwoTone } from "@ant-design/icons";
+import { Breadcrumb, Layout, Button, Card, Col, Row, Space, Divider, notification, Input, Select } from "antd";
 import axios from "axios";
 import "./App.css";
+
 import {
   getTokens,
   removeToken,
   isUserLoggedIn,
   getCurrentUserRole,
+  getCurrentUserToken,
 } from "../TokenManagement/tokenUtils";
 
 const { Header, Content, Footer } = Layout;
+const { Search } = Input;
+const { Option } = Select;
 
-function App({ PetsData, setPetsData, petEditor }) {
+function App({ PetsData, setPetsData }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [petToDelete, setPetToDelete] = useState(null);
+  const [pets, setPets] = useState([]);
+  const [filteredPets, setFilteredPets] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedType, setSelectedType] = useState("all");
+  const [showOutOfStock, setShowOutOfStock] = useState(false); // State for showing "Out of Stock" message
   const navigate = useNavigate();
 
-  // Function to navigate to Add Pet page
+  useEffect(() => {
+    if (!isUserLoggedIn() || getCurrentUserRole() !== "customer") {
+      navigate("/");
+    } else {
+      fetchAllPets();
+    }
+  }, [navigate]);
+
+  const fetchAllPets = async () => {
+    try {
+      const token = getCurrentUserToken(); // Ensure you have this function
+      const response = await axios.get("http://localhost:5000/pets", {
+        headers: { "auth-token": token },
+      });
+      setPets(response.data);
+      setFilteredPets(response.data); // Initialize filteredPets with fetched data
+      setPetsData(response.data); // Update the PetsData state with fetched data
+      setShowOutOfStock(response.data.length === 0); // Check if pets data is empty
+    } catch (error) {
+      console.error("Error fetching pets:", error);
+    }
+  };
+
+  const handleTypeChange = (value) => {
+    setSelectedType(value);
+    const filtered = value === "all" ? pets : pets.filter((pet) => pet.type === value);
+    setFilteredPets(filtered);
+    setShowOutOfStock(filtered.length === 0); // Update out of stock state
+  };
+
+  const handleSearch = (value) => {
+    setSearchQuery(value);
+    const filteredBySearch = pets.filter((pet) =>
+      pet.name.toLowerCase().includes(value.toLowerCase())
+    );
+    const filtered = selectedType === "all" ? filteredBySearch : filteredBySearch.filter((pet) => pet.type === selectedType);
+    setFilteredPets(filtered);
+    setShowOutOfStock(filtered.length === 0); // Update out of stock state
+  };
+
   function navigateFunc() {
     navigate("/Add");
   }
 
-  // Function to handle delete button click
   function handleDeleteClick(petId) {
     setPetToDelete(petId);
     setShowConfirm(true);
   }
 
-  // Function to confirm deletion
   async function handleConfirmDelete() {
     try {
-      await axios.delete(`http://localhost:5000/pets/${petToDelete}`);
-      setPetsData((prevData) =>
-        prevData.filter((pet) => pet.id !== petToDelete)
-      );
+      await axios.delete(`http://localhost:5000/pets/${petToDelete}`, {
+        headers: { "auth-token": getCurrentUserToken() },
+      });
+      setPets((prevData) => prevData.filter((pet) => pet._id !== petToDelete));
+      setFilteredPets((prevData) => prevData.filter((pet) => pet._id !== petToDelete));
+      setPetsData((prevData) => prevData.filter((pet) => pet._id !== petToDelete));
       notification.success({
         message: "Success",
         description: "Pet deleted successfully.",
@@ -62,13 +99,11 @@ function App({ PetsData, setPetsData, petEditor }) {
     }
   }
 
-  // Function to cancel delete operation
   function handleCancelDelete() {
     setShowConfirm(false);
     setPetToDelete(null);
   }
 
-  // Function to handle sign out
   function handleSignOut() {
     const tokens = getTokens();
     const customerId = Object.keys(tokens).find(
@@ -80,14 +115,38 @@ function App({ PetsData, setPetsData, petEditor }) {
     navigate("/");
   }
 
-  useEffect(() => {
-    if (!isUserLoggedIn() || getCurrentUserRole() !== "customer") {
-      navigate("/");
+  async function handleAdopt(petId) {
+    try {
+      const response = await axios.patch(
+        `/pets/adopt/${petId}`,
+        null,
+        {
+          headers: { "auth-token": getCurrentUserToken() },
+        }
+      );
+      setPets((prevData) =>
+        prevData.map((pet) =>
+          pet._id === petId ? { ...pet, status: "adopted" } : pet
+        )
+      );
+      setFilteredPets((prevData) =>
+        prevData.map((pet) =>
+          pet._id === petId ? { ...pet, status: "adopted" } : pet
+        )
+      );
+      notification.success({
+        message: "Success",
+        description: "Pet adopted successfully.",
+      });
+    } catch (error) {
+      console.error("Failed to adopt pet:", error.response ? error.response.data : error.message);
+      notification.error({
+        message: "Adoption Failed",
+        description: "Failed to adopt pet.",
+      });
     }
-    // You may fetch pets data here if necessary
-  }, [navigate]);
+  }
 
-  // Define pet images
   const petImages = {
     Cat: "https://cdn.vectorstock.com/i/500p/67/08/cat-full-black-silhouette-vector-51516708.jpg",
     Dog: "https://t4.ftcdn.net/jpg/04/37/04/67/360_F_437046701_q9t3W43b6y4nBn7710uH3mwEegUiMLA3.jpg",
@@ -95,29 +154,33 @@ function App({ PetsData, setPetsData, petEditor }) {
     Bird: "https://www.thepixelfreak.co.uk/wp-content/uploads/2018/07/Alternate-Dove-Logo.png",
   };
 
-  // Define pet cards
-  const petCards = PetsData.map((pet) => (
-    <Col span={6} key={pet.id}>
+  const petCards = filteredPets.map((pet) => (
+    <Col span={6} key={pet._id}>
       <Card
         title={pet.name}
         style={{
           margin: "10px",
           marginTop: "20px",
-          backgroundImage: `url(${petImages[pet.pettype]})`,
+          backgroundImage: `url(${petImages[pet.type]})`,
           backgroundSize: "70% 70%",
           backgroundPosition: "bottom right",
           backgroundRepeat: "no-repeat",
         }}
-        // actions={[
-        //   <EditTwoTone onClick={() => navigate(`/edit/${pet.id}`)} />, // Navigate to edit page with pet ID
-        //   <DeleteTwoTone onClick={() => handleDeleteClick(pet.id)} />,
-        // ]}
+        actions={[
+          <Button
+            type="primary"
+            onClick={() => handleAdopt(pet._id)}
+            disabled={pet.status === "Adopted"}
+          >
+            Adopt
+          </Button>,
+        ]}
         hoverable={true}
         bordered
       >
-        <p>Type: {pet.pettype}</p>
+        <p>Type: {pet.type}</p>
         <p>Breed: {pet.breed}</p>
-        <p>Price: {pet.price}</p>
+        <p>Price: ${pet.price}</p>
         <Space
           size={"large"}
           split={<Divider type="vertical" align="center" />}
@@ -139,7 +202,7 @@ function App({ PetsData, setPetsData, petEditor }) {
           justifyContent: "space-between",
         }}
       >
-        <h1 style={{ textAlign: "center", color: "white" }}> Pet Store </h1>
+        <h1 style={{ textAlign: "center", color: "white" }}>Pet Store</h1>
         <Button
           type="default"
           size="large"
@@ -153,20 +216,25 @@ function App({ PetsData, setPetsData, petEditor }) {
         </Button>
       </Header>
       <Content style={{ padding: "0 48px" }}>
-        <Breadcrumb
-          items={[{ title: "Home" }, { title: "Customer Dashboard" }]}
-        />
-        <Button
-          type="primary"
-          size="large"
-          onClick={navigateFunc}
-          style={{
-            marginLeft: "575px",
-            position: "absolute",
-          }}
-        >
-          Add Pet
-        </Button>
+        <Breadcrumb items={[{ title: "Home" }, { title: "Customer Dashboard" }]} />
+        <div style={{ marginBottom: "20px" }}>
+          <Select
+            defaultValue="all"
+            style={{ width: 120 }}
+            onChange={handleTypeChange}
+          >
+            <Option value="all">All Pets</Option>
+            <Option value="cat">Cats</Option>
+            <Option value="dog">Dogs</Option>
+            <Option value="fish">Fish</Option>
+            <Option value="bird">Birds</Option>
+          </Select>
+          <Search
+            placeholder="Search pets by name"
+            onSearch={handleSearch}
+            style={{ margin: "20px 0", width: 300 }}
+          />
+        </div>
         <div
           style={{
             padding: 24,
@@ -174,7 +242,13 @@ function App({ PetsData, setPetsData, petEditor }) {
             background: "#15325b",
           }}
         >
-          <Row gutter={16}>{petCards}</Row>
+          {showOutOfStock ? (
+            <div style={{ textAlign: "center", color: "white", fontSize: "18px" }}>
+              <p>No pets available at the moment. Please check back later!</p>
+            </div>
+          ) : (
+            <Row gutter={16}>{petCards}</Row>
+          )}
           {showConfirm && (
             <div
               className="sized-div1"
@@ -196,18 +270,22 @@ function App({ PetsData, setPetsData, petEditor }) {
                 onClick={handleConfirmDelete}
                 style={{ marginTop: "60px", marginRight: "80px" }}
               >
-                Delete
+                Confirm
               </Button>
-              <Button type="default" size="large" onClick={handleCancelDelete}>
+              <Button
+                type="default"
+                size="large"
+                onClick={handleCancelDelete}
+                style={{ marginTop: "60px", marginRight: "80px" }}
+              >
                 Cancel
               </Button>
             </div>
           )}
         </div>
       </Content>
-      <Footer>
-        <p>Triton industries©</p>
-        <p>contact : talha.asgher222@gmail.com</p>
+      <Footer style={{ textAlign: "center" }}>
+        Pet Store ©2024 Created by The Great Group 2
       </Footer>
     </Layout>
   );
